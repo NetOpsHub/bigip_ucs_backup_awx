@@ -1,0 +1,33 @@
+
+- name: prepare directory to store backup files
+  hosts: localhost
+  strategy: linear
+  
+  tasks:
+    - name: prepare directory to store backup files
+      file:
+        path: "/var/lib/awx/projects/bigip_ucs_backup_awx/files/{{'%Y%m%d' | strftime}}"
+        state: directory
+      when: not ("/var/lib/awx/projects/bigip_ucs_backup_awx/files/{{'%Y%m%d' | strftime}}" is exists)
+      run_once: yes
+      delegate_to: localhost
+      tags:
+        - always
+        
+- name: collect bigip ucs backup files
+  hosts: all
+  strategy: linear
+  
+  tasks:
+    - name: collect bigip ucs backup files
+      bigip_ucs_fetch:
+        provider:
+          server: "{{ansible_host}}"
+          user: "{{ansible_user}}"
+          password: "{{ansible_password}}"
+          validate_certs: no
+        src: "{{inventory_hostname}}_{{'%Y%m%d_%H%M%S' | strftime}}.ucs"
+        dest: "/var/lib/awx/projects/bigip_ucs_backup_awx/files/{{'%Y%m%d' | strftime}}/{{inventory_hostname}}_{{'%Y%m%d_%H%M%S' | strftime}}.ucs"
+      delegate_to: localhost
+      tags:
+        - bigip_ucs_backup_awx
